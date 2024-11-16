@@ -5,60 +5,155 @@
     <title>JellyFork</title>
 </head>
 <body>
-    <div id="JellyForkConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+    <div id="configPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
         <div data-role="content">
             <div class="content-primary">
-                <form id="JellyForkConfigForm"><br>
-                    <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused">Downloads directory</label>
-                        <input id="inputDirectory" name="InputDirectory" for="InputDirectory" is="emby-input"/>
-                        <div class="fieldDescription">Define directory where media is being downloaded (ie. /user/downloads)
-                    </div><br><br>
-                    <div class="inputContainer">
-                        <label class="inputLabel inputLabelUnfocused">Movies directory</label>
-                        <input id="outputDirectory" name="OutputDirectory" for="OutputDirectory" is="emby-input"/>
-                        <div class="fieldDescription">Define your Movies directory (ie. /user/jellyfin/movies)
-                    </div><br><br>
-                    <div>
-                        <!-- <button is="emby-button" type="submit" class="raised button-submit block emby-button"> -->
+                <form id="config">
+                    <div class="jfSection">
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="inputDirectory">Downloads directory</label>
+                            <input id="inputDirectory" is="emby-input" value="" />
+                            <div class="fieldDescription">
+                                Define directory where media is being downloaded (ie. /user/downloads)
+                            </div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="outputDirectory">Media directory</label>
+                            <input id="outputDirectory" is="emby-input" value="" />
+                            <div class="fieldDescription">
+                                Define your output directory (ie. /user/movies or /user/shows)
+                            </div>
+                        </div>
+
                         <button type="submit" class="raised button-submit block emby-button">
                             <span>Update configuration</span>
                         </button>
                     </div>
                 </form>
-                <div id="JellyForkResponse" style="margin-top: 10px;"></div>
+                <br>
+
+                <form id="scanMedia">
+                    <div class="jfSection">
+                        <div>
+                            <table style="width: 100%;" class="scannedMedia">
+                                <tr>
+                                    <th>File name</th>
+                                    <th>File extension</th>
+                                    <th>Selected</th>
+                                </tr>
+                                <tr>
+                                    <td>Megalopolis.2024.1080p.WEBRip.x264.AAC5.1-[YTS.MX]</td>
+                                    <td class="fileExtension">.mp4</td>
+                                    <td class="fileSelected">true</td>
+                                </tr>
+                                <tr>
+                                    <td>Megalopolis.2024.1080p.WEBRip.x264.AAC5.1-[YTS.MX]</td>
+                                    <td class="fileExtension">.srt</td>
+                                    <td class="fileSelected">true</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <button type="submit" class="raised button-submit block emby-button">
+                            <span>Scan for new media</span>
+                        </button>
+                    </div>
+                </form>
+                <br>
+
+                <form id="moveMedia">
+                    <div class="jfSection">
+                        <label class="inputLabel inputLabelUnfocused" for="movieMedia">Select new name</label>
+                        <input id="movieMedia" is="emby-input"/>
+                        <div class="fieldDescription">
+                            Enter new file name without extension (.mp4, .srt)
+                        </div>
+
+                        <button type="submit" class="raised button-submit block emby-button">
+                            <span>Rename and move</span>
+                        </button>
+                    </div>
+                </form>
+                <br>
+
+                <form id="undoLastAction">
+                    <button id="undoButton" type="submit" class="raised button-submit block emby-button">
+                        <span>Undo last action</span>
+                    </button>
+                </form>
+
             </div>
         </div>
+
         <script type="text/javascript">
             var JellyForkConfig = {
                 pluginUniqueId: '6aabd9ed-969f-4225-b316-6b3b33a2fddb'
             };
 
-            <!-- document.querySelector('#JellyForkConfigPage') -->
-            <!--     .addEventListener('pageshow', function() { -->
+            document.querySelector('#configPage')
+                .addEventListener('pageshow', function() {
+                    console.log("initial load");
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(JellyForkConfig.pluginUniqueId).then(function (config) {
+                        document.querySelector('#inputDirectory').value = config.InputDir;
+                        document.querySelector('#outputDirectory').value = config.OutputDir;
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+            document.querySelector('#config')
+                .addEventListener('submit', function(e) {
+                    console.log("update config");
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(JellyForkConfig.pluginUniqueId).then(function (config) {
+                        config.InputDir = document.querySelector('#inputDirectory').value;
+                        config.OutputDir = document.querySelector('#outputDirectory').value;
+                        ApiClient.updatePluginConfiguration(JellyForkConfig.pluginUniqueId, config).then(function (result) {
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                        });
+                    });
+                    e.preventDefault();
+                    return false;
+                });
+
+            const handler = response => response.json().then(res => {
+                console.log(response);
+            });
+
+            <!-- document.querySelector('#scanMedia') -->
+            <!--     .addEventListener('submit', function(e) { -->
+            <!--         console.log("getMedia call"); -->
+            <!--         ApiClient.ajax({ -->
+            <!--             type: 'POST', -->
+            <!--             url: '/Jellyfin/Plugin/JellyFork/getMedia', -->
+            <!--             contentType: 'application/json' -->
+            <!--         }).then(handler).catch(handler); -->
             <!--     }); -->
 
-            $('#JellyForkConfigForm').on('submit', function(event) {
-                event.preventDefault(); 
-
-                var formData = {
-                    inputDirectory: $('#inputDirectory').val(), 
-                    outputDirectory: $('#outputDirectory').val() 
-                };
-
-                $.ajax({
-                    type: 'POST',
-                    url: '/plugins/jellyfork/run', 
-                    data: formData,
-                    success: function(response) {
-                        alert(response.alert); 
-                    },
-                    error: function(xhr, status, error) {
-                        alert('An error occurred: ' + xhr.responseJSON.alert);
-                    }
-                });
-            });
         </script>
+
+        <style>
+            .fileExtension {
+                text-align: center;
+            }
+            .fileSelected {
+                text-align: center;
+            }
+            .jfSection {
+                border: 1px solid gray;
+                border-radius: 5px;
+                padding: 20px;
+                margin: 10px;
+            }
+            #undoButton {
+                background-color: red;
+                width: 30%;
+                margin: auto;
+            }
+        </style>
+
     </div>
 </body>
 </html>
