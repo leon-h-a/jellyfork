@@ -34,48 +34,41 @@
                 </form>
                 <br>
 
-                    <div class="jfSection">
-                        <div>
-                            <table style="width: 100%;" id="media-available">
-                                <thead>
-                                    <tr>
-                                        <th>File name</th>
-                                        <th>File type</th>
-                                        <th>Edit</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <button id="scanMedia" class="raised button-submit block emby-button">
-                            <span>Scan for new media</span>
-                        </button>
+                <div class="jfSection ">
+                    <div>
+                        <table style="width: 100%;" id="media-available">
+                            <thead>
+                                <tr>
+                                    <th>File name</th>
+                                    <th>Ext.</th>
+                                    <th>Edit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
                     </div>
-                <br>
+                    <br>
 
-                <form id="moveMedia">
-                    <div class="jfSection">
-                        <label class="inputLabel inputLabelUnfocused" for="movieMedia">Select new name</label>
-                        <input id="movieMedia" is="emby-input"/>
-                        <div class="fieldDescription">
-                            Enter new file name without extension (.mp4, .srt)
-                        </div>
-
-                        <button type="submit" class="raised button-submit block emby-button">
-                            <span>Rename and move</span>
-                        </button>
-                    </div>
-                </form>
-                <br>
-
-                <form id="undoLastAction">
-                    <button id="undoButton" type="submit" class="raised button-submit block emby-button">
-                        <span>Undo last action</span>
+                    <button id="scanMedia" class="raised button-submit block emby-button">
+                        <span>Scan for new media</span>
                     </button>
-                </form>
+                </div>
+                <br>
 
+                <div class="jfSection">
+                    <label class="inputLabel inputLabelUnfocused" for="movieMedia">Select new name</label>
+                    <input id="newNameInput" is="emby-input"/>
+                    <div class="fieldDescription">
+                        Enter new file name without extension (.mp4, .srt)
+                    </div>
+                    <br>
+
+                    <button id="newNameBtn" type="submit" class="raised button-submit block emby-button">
+                        <span>Rename and move</span>
+                    </button>
+                </div>
+                <br>
             </div>
         </div>
 
@@ -86,7 +79,6 @@
 
             document.querySelector('#configPage')
                 .addEventListener('pageshow', function() {
-                    console.log("initial load");
                     Dashboard.showLoadingMsg();
                     ApiClient.getPluginConfiguration(JellyForkConfig.pluginUniqueId).then(function (config) {
                         document.querySelector('#inputDirectory').value = config.InputDir;
@@ -97,7 +89,6 @@
 
             document.querySelector('#config')
                 .addEventListener('submit', function(e) {
-                    console.log("update config");
                     Dashboard.showLoadingMsg();
                     ApiClient.getPluginConfiguration(JellyForkConfig.pluginUniqueId).then(function (config) {
                         config.InputDir = document.querySelector('#inputDirectory').value;
@@ -119,6 +110,10 @@
 
             document.getElementById('scanMedia')
                 .addEventListener('click', () => { 
+                    const table = document.getElementById('media-available');
+                    const rows = table.querySelectorAll('tbody tr');
+                    rows.forEach(row => row.remove());
+
                     $.ajax({
                         type: 'POST',
                         url: '/plugins/jellyfork/getmedia',
@@ -126,12 +121,10 @@
                             inputDirectory: document.querySelector('#inputDirectory').value
                         },
                         success: function (response) {
-                            <!-- console.log(response.data); -->
 
-                            const tableBody = document.querySelector('#media-available');
+                            const tableBody = document.querySelector('#media-available tbody');
 
-                            const processDirectory = (directory) => {
-                                console.log(directory);
+                            function processDirectory(directory) {
                                 if (directory.Files && Array.isArray(directory.Files)) {
                                     directory.Files.forEach(file => {
                                         const row = document.createElement('tr');
@@ -139,15 +132,17 @@
                                         const fileCell = document.createElement('td');
                                         fileCell.className = "truncated";
                                         fileCell.textContent = file.Name;
-                                        fileCell.setAttribute('data-fulltext', file.Name);
+                                        fileCell.setAttribute('data-fullpath', file.FullPath);
                                         row.appendChild(fileCell);
 
                                         const extCell = document.createElement('td');
+                                        extCell.setAttribute('class', "ext-cell");
                                         extCell.textContent = getFileExtension(file.Name);
                                         row.appendChild(extCell);
 
                                         const editCell = document.createElement('td');
                                         const checkbox = document.createElement('input');
+                                        editCell.setAttribute('class', "edit-cell");
                                         checkbox.type = 'checkbox';
                                         checkbox.value = file.FullPath;
                                         editCell.appendChild(checkbox);
@@ -162,12 +157,44 @@
                                     });
                                 }
                             };
-                            processDirectory(response.data);
+                            rootDir = JSON.parse(response.data);
+                            processDirectory(rootDir);
                         },
                         error: function (response) {
                             console.log('error');
                         }
                     });
+                });
+
+            document.getElementById('newNameBtn')
+                .addEventListener('click', () => { 
+
+                    var newNameStr = document.querySelector('#newNameInput').value;
+
+                    const table = document.getElementById('media-available');
+                    const selectedFiles = [];
+                    const rows = table.querySelectorAll('tbody tr');
+
+                    rows.forEach(row => {
+                        const checkbox = row.querySelector('input[type="checkbox"]');
+                        if (checkbox && checkbox.checked) {
+                            const filenameCell = row.querySelector('td:first-child');
+                            if (filenameCell) {
+                                selectedFiles.push(filenameCell.getAttribute("data-fullpath").trim());
+                            }
+                        }
+                    });
+                    $.ajax({
+                        type: 'POST',
+                        url: '/plugins/jellyfork/rename',
+                        data: {
+                            inputDirectory: document.querySelector('#inputDirectory').value,
+                            outputDirectory: document.querySelector('#outputDirectory').value,
+                            newName: document.querySelector('#newNameInput').value,
+                            files: selectedFiles
+                        }
+                    });
+                    document.getElementById('scanMedia').click();
                 });
 
         </script>
@@ -184,11 +211,36 @@
                 border-radius: 5px;
                 padding: 20px;
                 margin: 10px;
+                max-width: 50em;
             }
             #undoButton {
                 background-color: red;
-                width: 30%;
+                width: 50%;
                 margin: auto;
+            }
+            td {
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                overflow: hidden;
+                max-width: 120px;
+                padding-top: 15px;
+            }
+            td.truncated {
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+            }
+            td.truncated:active{
+                white-space: normal;
+                overflow-wrap: break-word;
+                word-break: break-word;
+                user-select: none;
+            }
+            .ext-cell {
+                text-align: center;
+            }
+            .edit-cell {
+                text-align: center;
             }
         </style>
 
