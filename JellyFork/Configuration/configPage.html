@@ -34,33 +34,25 @@
                 </form>
                 <br>
 
-                <form id="scanMedia">
                     <div class="jfSection">
                         <div>
-                            <table style="width: 100%;" class="scannedMedia">
-                                <tr>
-                                    <th>File name</th>
-                                    <th>File extension</th>
-                                    <th>Selected</th>
-                                </tr>
-                                <tr>
-                                    <td>Megalopolis.2024.1080p.WEBRip.x264.AAC5.1-[YTS.MX]</td>
-                                    <td class="fileExtension">.mp4</td>
-                                    <td class="fileSelected">true</td>
-                                </tr>
-                                <tr>
-                                    <td>Megalopolis.2024.1080p.WEBRip.x264.AAC5.1-[YTS.MX]</td>
-                                    <td class="fileExtension">.srt</td>
-                                    <td class="fileSelected">true</td>
-                                </tr>
+                            <table style="width: 100%;" id="media-available">
+                                <thead>
+                                    <tr>
+                                        <th>File name</th>
+                                        <th>File type</th>
+                                        <th>Edit</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
                             </table>
                         </div>
 
-                        <button type="submit" class="raised button-submit block emby-button">
+                        <button id="scanMedia" class="raised button-submit block emby-button">
                             <span>Scan for new media</span>
                         </button>
                     </div>
-                </form>
                 <br>
 
                 <form id="moveMedia">
@@ -118,19 +110,65 @@
                     return false;
                 });
 
-            const handler = response => response.json().then(res => {
-                console.log(response);
-            });
+            const getFileExtension = (filename) => {
+                const parts = filename.split('.');
+                return parts.length > 1 ? parts.pop() : 'N/A';
+            };
 
-            <!-- document.querySelector('#scanMedia') -->
-            <!--     .addEventListener('submit', function(e) { -->
-            <!--         console.log("getMedia call"); -->
-            <!--         ApiClient.ajax({ -->
-            <!--             type: 'POST', -->
-            <!--             url: '/Jellyfin/Plugin/JellyFork/getMedia', -->
-            <!--             contentType: 'application/json' -->
-            <!--         }).then(handler).catch(handler); -->
-            <!--     }); -->
+
+
+            document.getElementById('scanMedia')
+                .addEventListener('click', () => { 
+                    $.ajax({
+                        type: 'POST',
+                        url: '/plugins/jellyfork/getmedia',
+                        data: {
+                            inputDirectory: document.querySelector('#inputDirectory').value
+                        },
+                        success: function (response) {
+                            <!-- console.log(response.data); -->
+
+                            const tableBody = document.querySelector('#media-available');
+
+                            const processDirectory = (directory) => {
+                                console.log(directory);
+                                if (directory.Files && Array.isArray(directory.Files)) {
+                                    directory.Files.forEach(file => {
+                                        const row = document.createElement('tr');
+
+                                        const fileCell = document.createElement('td');
+                                        fileCell.className = "truncated";
+                                        fileCell.textContent = file.Name;
+                                        fileCell.setAttribute('data-fulltext', file.Name);
+                                        row.appendChild(fileCell);
+
+                                        const extCell = document.createElement('td');
+                                        extCell.textContent = getFileExtension(file.Name);
+                                        row.appendChild(extCell);
+
+                                        const editCell = document.createElement('td');
+                                        const checkbox = document.createElement('input');
+                                        checkbox.type = 'checkbox';
+                                        checkbox.value = file.FullPath;
+                                        editCell.appendChild(checkbox);
+                                        row.appendChild(editCell);
+
+                                        tableBody.appendChild(row);                            
+                                    });
+                                };
+                                if (directory.Subdirectories && Array.isArray(directory.Subdirectories)) {
+                                    directory.Subdirectories.forEach(subdirectory => {
+                                        processDirectory(subdirectory);
+                                    });
+                                }
+                            };
+                            processDirectory(response.data);
+                        },
+                        error: function (response) {
+                            console.log('error');
+                        }
+                    });
+                });
 
         </script>
 
