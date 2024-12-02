@@ -1,9 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Collections.Generic;
+
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.JellyForkPlugin.JellyFork
 {
@@ -21,8 +22,6 @@ namespace Jellyfin.JellyForkPlugin.JellyFork
         [HttpPost("getmedia")]
         public IActionResult Run([FromForm] string inputDirectory)
         {
-            _logger.LogInformation($"input: {inputDirectory}");
-
             if (Directory.Exists(inputDirectory))
             {
                 var directoryTree = GetDirectoryTree(inputDirectory);
@@ -31,7 +30,6 @@ namespace Jellyfin.JellyForkPlugin.JellyFork
                     WriteIndented = true
                 });
 
-                _logger.LogInformation(json);
                 return Ok(new { alert = "Configuration saved successfully!", data = json });
             }
             else
@@ -44,11 +42,6 @@ namespace Jellyfin.JellyForkPlugin.JellyFork
         private static DirectoryNode GetDirectoryTree(string path)
         {
             var directoryInfo = new DirectoryInfo(path);
-
-            if (directoryInfo.Attributes.HasFlag(FileAttributes.Hidden))
-            {
-                return null;
-            }
 
             var directoryNode = new DirectoryNode
             {
@@ -80,16 +73,49 @@ namespace Jellyfin.JellyForkPlugin.JellyFork
 
         private class DirectoryNode
         {
-            public string Name { get; set; }
-            public string FullPath { get; set; }
-            public List<FileNode> Files { get; set; }
-            public List<DirectoryNode> Subdirectories { get; set; }
+            public required string Name { get; set; }
+            public required string FullPath { get; set; }
+            public required List<FileNode> Files { get; set; }
+            public required List<DirectoryNode> Subdirectories { get; set; }
         }
 
         private class FileNode
         {
-            public string Name { get; set; }
-            public string FullPath { get; set; }
+            public required string Name { get; set; }
+            public required string FullPath { get; set; }
+        }
+        [HttpPost("rename")]
+        public IActionResult Run(
+            [FromForm] string inputDirectory,
+            [FromForm] string outputDirectory,
+            [FromForm] string newName,
+            [FromForm] List<String> files
+        )
+        {
+            _logger.LogDebug(inputDirectory);
+            _logger.LogDebug(outputDirectory);
+            _logger.LogDebug(newName);
+            _logger.LogDebug(string.Join(", ", files));
+
+            try
+            {
+                foreach (var file in files)
+                {
+                    string oldFilePath = Path.Combine(inputDirectory, file);
+                    _logger.LogInformation(oldFilePath);
+                    string extension = Path.GetExtension(file);
+                    string newFilePath = Path.Combine(outputDirectory, newName + extension);
+                    _logger.LogInformation(newFilePath);
+
+                    System.IO.File.Move(oldFilePath, newFilePath);
+                }
+                return Ok(new { alert = "Action success"});
+            }
+            catch (Exception ex)
+            { 
+                _logger.LogError($"{ex.Message}");
+                return BadRequest(new { alert = $"{ex.Message}"});
+            }
         }
     }
 }
