@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JellyFork</title>
+</head>
+<body>
+    <div id="JellyForkConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="JellyForkConfigForm"><br>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused">Downloads directory</label>
+                        <input id="inputDirectory" name="InputDirectory" for="InputDirectory" is="emby-input"/>
+                        <div class="fieldDescription">Define directory where media is being downloaded (ie. /user/downloads)
+                    </div><br><br>
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused">Movies directory</label>
+                        <input id="outputDirectory" name="OutputDirectory" for="OutputDirectory" is="emby-input"/>
+                        <div class="fieldDescription">Define your Movies directory (ie. /user/jellyfin/movies)
+                    </div><br><br>
+                    <div>
+                        <!-- <button is="emby-button" type="submit" class="raised button-submit block emby-button"> -->
+                        <button type="submit" class="raised button-submit block emby-button">
+                            <span>Update configuration</span>
+                        </button>
+                    </div>
+                </form>
+                <div id="JellyForkResponse" style="margin-top: 10px;"></div>
+            </div>
+        </div>
+        <script type="text/javascript">
+            var JellyForkConfig = {
+                pluginUniqueId: '6aabd9ed-969f-4225-b316-6b3b33a2fddb'
+            };
+
+            <!-- document.querySelector('#JellyForkConfigPage') -->
+            <!--     .addEventListener('pageshow', function() { -->
+            <!--     }); -->
+
+            $('#JellyForkConfigForm').on('submit', function(event) {
+                event.preventDefault(); 
+
+                var formData = {
+                    inputDirectory: $('#inputDirectory').val(), 
+                    outputDirectory: $('#outputDirectory').val() 
+                };
+
+                $.ajax({
+                    type: 'POST',
+                    url: '/plugins/jellyfork/run', 
+                    data: formData,
+                    success: function(response) {
+                        alert(response.alert); 
+                    },
+                    error: function(xhr, status, error) {
+                        alert('An error occurred: ' + xhr.responseJSON.alert);
+                    }
+                });
+            });
+        </script>
+    </div>
+</body>
+</html>
