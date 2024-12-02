@@ -58,6 +58,10 @@
                 <br>
 
                 <div class="jfSection">
+                    <span>Files you selected for editing</span>
+                    <div id="selected-files">
+                    </div>
+
                     <label class="inputLabel inputLabelUnfocused" for="movieMedia">Select new name</label>
                     <input id="newNameInput" is="emby-input"/>
                     <div class="fieldDescription">
@@ -169,8 +173,17 @@
                         const editCell = document.createElement('td');
                         const checkbox = document.createElement('input');
                         editCell.setAttribute('class', "edit-cell");
+                        checkbox.setAttribute('data-name', file.Name);
                         checkbox.type = 'checkbox';
                         checkbox.value = file.FullPath;
+
+                        checkbox.onchange = () => {
+                            if (checkbox.checked) {
+                                onChecked(checkbox);
+                            } else {
+                                onUnchecked(checkbox);
+                            }
+                        }
                         editCell.appendChild(checkbox);
                         row.appendChild(editCell);
 
@@ -179,6 +192,21 @@
                 }
             }
 
+            function onChecked (element) {
+                const selectedList = document.getElementById('selected-files');
+                const checkedFile = document.createElement('div');
+                checkedFile.setAttribute('id', element.value.replace(/[^a-zA-Z0-9_-]/g, '_'));
+                checkedFile.setAttribute('class', 'checked-item');
+
+                checkedFile.textContent = element.getAttribute('data-name');
+                selectedList.appendChild(checkedFile);
+            }
+
+            function onUnchecked (element) {
+                const selectedList = document.getElementById('selected-files');
+                const uncheckedFile = document.getElementById(element.value.replace(/[^a-zA-Z0-9_-]/g, '_'));
+                selectedList.removeChild(uncheckedFile);
+            }
 
             document.getElementById('scanMedia')
                 .addEventListener('click', () => { 
@@ -194,6 +222,7 @@
                             inputDirectory: document.querySelector('#inputDirectory').value
                         },
                         success: function (response) {
+                            cleanup();
                             rootDir = JSON.parse(response.data);
                             Dashboard.hideLoadingMsg();
                             processDirectory(rootDir);
@@ -207,6 +236,7 @@
 
             document.getElementById('newNameBtn')
                 .addEventListener('click', () => { 
+                    Dashboard.showLoadingMsg();
 
                     var newNameStr = document.querySelector('#newNameInput').value;
 
@@ -217,12 +247,13 @@
                     rows.forEach(row => {
                         const checkbox = row.querySelector('input[type="checkbox"]');
                         if (checkbox && checkbox.checked) {
-                            const filenameCell = row.querySelector('td:first-child');
+                            const filenameCell = row.querySelector('td:nth-child(2)');
                             if (filenameCell) {
                                 selectedFiles.push(filenameCell.getAttribute("data-fullpath").trim());
                             }
                         }
                     });
+
                     $.ajax({
                         type: 'POST',
                         url: '/plugins/jellyfork/rename',
@@ -233,10 +264,13 @@
                             files: selectedFiles
                         },
                         success: function (response) {
+                            console.log(response);
+                            Dashboard.hideLoadingMsg();
                             document.getElementById('scanMedia').click();
                         },
                         error: function (response) {
                             console.log(response);
+                            Dashboard.hideLoadingMsg();
                         }
                     });
                 });
@@ -272,6 +306,11 @@
                         console.log(response);
                     }
                 });
+            }
+            
+            function cleanup() {
+                document.getElementById('selected-files').innerHTML = '';
+                document.getElementById('newNameInput').value = '';
             }
         </script>
 
@@ -331,6 +370,25 @@
             .delete-dir-button:active {
                 background: red;
                 color: black;
+            }
+            #selected-files {
+                min-height: 30px;
+                background-color: #1e1e1e;
+                margin-top: 6px;
+                margin-bottom: 40px;
+                border-radius: 0.2em;
+                padding: 10px;
+            }
+            .checked-item {
+                margin: 15px 0;
+                text-overflow: ellipsis;
+                overflow: hidden;
+            }
+            .checked-item:active {
+                white-space: normal;
+                overflow-wrap: break-word;
+                word-break: break-word;
+                user-select: none;
             }
         </style>
 
