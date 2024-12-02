@@ -39,9 +39,9 @@
                         <table style="width: 100%;" id="media-available">
                             <thead>
                                 <tr>
-                                    <th>File name</th>
-                                    <th>Ext.</th>
-                                    <th>Edit</th>
+                                    <th style="width: 70%;">File name</th>
+                                    <th style="width: 15%;">Ext.</th>
+                                    <th style="width: 15%;">Edit</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -106,6 +106,58 @@
                 return parts.length > 1 ? parts.pop() : 'N/A';
             };
 
+            function processDirectory(directory, parentClass = '') {
+                const tableBody = document.querySelector('#media-available tbody');
+
+                if (directory.Subdirectories && Array.isArray(directory.Subdirectories)) {
+                    directory.Subdirectories.forEach(subdirectory => {
+                        const folderRow = document.createElement('tr');
+                        folderRow.className = 'folder-row ' + parentClass.replace(/[^a-zA-Z0-9_-]/g, '_');
+                        folderRow.setAttribute('data-folder', subdirectory.Name);
+                        folderRow.style.display = parentClass ? 'none' : '';
+
+                        const folderCell = document.createElement('td');
+                        folderCell.className = "folder-name truncated";
+                        folderCell.colSpan = 1;
+                        folderCell.textContent = subdirectory.Name;
+                        folderCell.setAttribute('data-fullpath', subdirectory.FullPath);
+                        folderRow.appendChild(folderCell);
+
+                        tableBody.appendChild(folderRow);
+
+                        processDirectory(subdirectory, 'folder-' + subdirectory.Name);
+                    });
+                }
+
+                if (directory.Files && Array.isArray(directory.Files)) {
+                    directory.Files.forEach(file => {
+                        const row = document.createElement('tr');
+                        row.className = 'file-row ' + parentClass.replace(/[^a-zA-Z0-9_-]/g, '_');
+                        row.style.display = parentClass ? 'none' : '';
+
+                        const fileCell = document.createElement('td');
+                        fileCell.className = "truncated";
+                        fileCell.textContent = file.Name;
+                        fileCell.setAttribute('data-fullpath', file.FullPath);
+                        row.appendChild(fileCell);
+
+                        const extCell = document.createElement('td');
+                        extCell.setAttribute('class', "ext-cell");
+                        extCell.textContent = getFileExtension(file.Name);
+                        row.appendChild(extCell);
+
+                        const editCell = document.createElement('td');
+                        const checkbox = document.createElement('input');
+                        editCell.setAttribute('class', "edit-cell");
+                        checkbox.type = 'checkbox';
+                        checkbox.value = file.FullPath;
+                        editCell.appendChild(checkbox);
+                        row.appendChild(editCell);
+
+                        tableBody.appendChild(row);
+                    });
+                }
+            }
 
 
             document.getElementById('scanMedia')
@@ -121,43 +173,8 @@
                             inputDirectory: document.querySelector('#inputDirectory').value
                         },
                         success: function (response) {
-
-                            const tableBody = document.querySelector('#media-available tbody');
-
-                            function processDirectory(directory) {
-                                if (directory.Files && Array.isArray(directory.Files)) {
-                                    directory.Files.forEach(file => {
-                                        const row = document.createElement('tr');
-
-                                        const fileCell = document.createElement('td');
-                                        fileCell.className = "truncated";
-                                        fileCell.textContent = file.Name;
-                                        fileCell.setAttribute('data-fullpath', file.FullPath);
-                                        row.appendChild(fileCell);
-
-                                        const extCell = document.createElement('td');
-                                        extCell.setAttribute('class', "ext-cell");
-                                        extCell.textContent = getFileExtension(file.Name);
-                                        row.appendChild(extCell);
-
-                                        const editCell = document.createElement('td');
-                                        const checkbox = document.createElement('input');
-                                        editCell.setAttribute('class', "edit-cell");
-                                        checkbox.type = 'checkbox';
-                                        checkbox.value = file.FullPath;
-                                        editCell.appendChild(checkbox);
-                                        row.appendChild(editCell);
-
-                                        tableBody.appendChild(row);                            
-                                    });
-                                };
-                                if (directory.Subdirectories && Array.isArray(directory.Subdirectories)) {
-                                    directory.Subdirectories.forEach(subdirectory => {
-                                        processDirectory(subdirectory);
-                                    });
-                                }
-                            };
                             rootDir = JSON.parse(response.data);
+                            console.log(rootDir);
                             processDirectory(rootDir);
                         },
                         error: function (response) {
@@ -192,10 +209,36 @@
                             outputDirectory: document.querySelector('#outputDirectory').value,
                             newName: document.querySelector('#newNameInput').value,
                             files: selectedFiles
+                        },
+                        success: function (response) {
+                            document.getElementById('scanMedia').click();
+                        },
+                        error: function (response) {
+                            console.log(response);
                         }
                     });
-                    document.getElementById('scanMedia').click();
                 });
+
+            document.addEventListener('click', (event) => {
+                if (event.target.closest('.folder-row')) {
+                    const tableBody = document.querySelector('#media-available tbody');
+                    const folderRow = event.target.closest('.folder-row');
+                    const folderName = folderRow.getAttribute('data-folder').replace(/[^a-zA-Z0-9_-]/g, '_');
+                    console.log(folderName);
+
+                    const childRows = tableBody.querySelectorAll(
+                        '.file-row.folder-' + folderName + ', .folder-row.folder-' + folderName
+                    );
+                    console.log(childRows);
+
+                    folderRow.classList.toggle('expanded');
+                    const isVisible = folderRow.classList.contains('expanded');
+
+                    childRows.forEach(row => {
+                        row.style.display = isVisible ? '' : 'none';
+                    });
+                }
+            });
 
         </script>
 
@@ -213,34 +256,36 @@
                 margin: 10px;
                 max-width: 50em;
             }
-            #undoButton {
-                background-color: red;
-                width: 50%;
-                margin: auto;
-            }
             td {
                 text-overflow: ellipsis;
                 white-space: nowrap;
                 overflow: hidden;
                 max-width: 120px;
-                padding-top: 15px;
             }
             td.truncated {
                 overflow: hidden;
                 white-space: nowrap;
                 text-overflow: ellipsis;
             }
-            td.truncated:active{
-                white-space: normal;
-                overflow-wrap: break-word;
-                word-break: break-word;
-                user-select: none;
-            }
-            .ext-cell {
+            .ext-cell, .edit-cell, .fileExtension, .fileSelected {
                 text-align: center;
             }
-            .edit-cell {
-                text-align: center;
+
+            .file-row td {
+              padding-left: 20px;
+              opacity: 0.75;
+            }
+            .folder-row {
+              font-weight: bold;
+              cursor: pointer;
+            }
+            .folder-row:after {
+              content: " ▶";
+              font-size: 12px;
+            }
+            .folder-row.expanded:after {
+              content: " ▼";
+              font-size: 12px;
             }
         </style>
 
