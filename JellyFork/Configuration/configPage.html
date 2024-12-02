@@ -36,10 +36,11 @@
 
                 <div class="jfSection ">
                     <div>
-                        <table style="width: 100%;" id="media-available">
+                        <table style="width: 100%; border-collapse: separate; border-spacing: 0 1em;" id="media-available">
                             <thead>
                                 <tr>
-                                    <th style="width: 70%;">File name</th>
+                                    <th style="width: 10%;"></th>
+                                    <th style="width: 60%;">File name</th>
                                     <th style="width: 15%;">Ext.</th>
                                     <th style="width: 15%;">Edit</th>
                                 </tr>
@@ -106,12 +107,22 @@
                 return parts.length > 1 ? parts.pop() : 'N/A';
             };
 
-            function processDirectory(directory, parentClass = '') {
+            function processDirectory(directory, parentClass = '', depth = 0) {
                 const tableBody = document.querySelector('#media-available tbody');
 
                 if (directory.Subdirectories && Array.isArray(directory.Subdirectories)) {
                     directory.Subdirectories.forEach(subdirectory => {
+                        
                         const folderRow = document.createElement('tr');
+
+                        if (depth <= 0) {
+                            const folderDelete = document.createElement('button');
+                            folderDelete.className = "delete-dir-button";
+                            folderDelete.textContent = "Delete";
+                            folderDelete.onclick = () => deleteDirectory(subdirectory.FullPath);
+                            folderRow.appendChild(folderDelete);
+                        }
+
                         folderRow.className = 'folder-row ' + parentClass.replace(/[^a-zA-Z0-9_-]/g, '_');
                         folderRow.setAttribute('data-folder', subdirectory.Name);
                         folderRow.style.display = parentClass ? 'none' : '';
@@ -121,11 +132,17 @@
                         folderCell.colSpan = 1;
                         folderCell.textContent = subdirectory.Name;
                         folderCell.setAttribute('data-fullpath', subdirectory.FullPath);
+                        folderCell.onclick = () => expandChildElements(folderRow);
                         folderRow.appendChild(folderCell);
 
                         tableBody.appendChild(folderRow);
 
-                        processDirectory(subdirectory, 'folder-' + subdirectory.Name);
+                        <!-- Issue ref: #10 -->
+                        if (parentClass === '') {
+                            processDirectory(subdirectory, 'folder-' + subdirectory.Name, depth+1);
+                        } else {
+                            processDirectory(subdirectory, 'folder-' + directory.Name, depth+1);
+                        }
                     });
                 }
 
@@ -134,6 +151,9 @@
                         const row = document.createElement('tr');
                         row.className = 'file-row ' + parentClass.replace(/[^a-zA-Z0-9_-]/g, '_');
                         row.style.display = parentClass ? 'none' : '';
+
+                        const fillerCell = document.createElement('div');
+                        row.appendChild(fillerCell);
 
                         const fileCell = document.createElement('td');
                         fileCell.className = "truncated";
@@ -162,6 +182,7 @@
 
             document.getElementById('scanMedia')
                 .addEventListener('click', () => { 
+                    Dashboard.showLoadingMsg();
                     const table = document.getElementById('media-available');
                     const rows = table.querySelectorAll('tbody tr');
                     rows.forEach(row => row.remove());
@@ -174,10 +195,11 @@
                         },
                         success: function (response) {
                             rootDir = JSON.parse(response.data);
-                            console.log(rootDir);
+                            Dashboard.hideLoadingMsg();
                             processDirectory(rootDir);
                         },
                         error: function (response) {
+                            Dashboard.hideLoadingMsg();
                             console.log('error');
                         }
                     });
@@ -219,27 +241,38 @@
                     });
                 });
 
-            document.addEventListener('click', (event) => {
-                if (event.target.closest('.folder-row')) {
-                    const tableBody = document.querySelector('#media-available tbody');
-                    const folderRow = event.target.closest('.folder-row');
-                    const folderName = folderRow.getAttribute('data-folder').replace(/[^a-zA-Z0-9_-]/g, '_');
-                    console.log(folderName);
+            function expandChildElements(folderRow) {
+                const tableBody = document.querySelector('#media-available tbody');
+                const folderName = folderRow.getAttribute('data-folder').replace(/[^a-zA-Z0-9_-]/g, '_');
+                const childRows = tableBody.querySelectorAll(
+                    '.file-row.folder-' + folderName, '.folder-row.folder-' + folderName
+                );
+                folderRow.classList.toggle('expanded');
+                const isVisible = folderRow.classList.contains('expanded');
+                childRows.forEach(row => {
+                    row.style.display = isVisible ? '' : 'none';
+                });
+            }
 
-                    const childRows = tableBody.querySelectorAll(
-                        '.file-row.folder-' + folderName + ', .folder-row.folder-' + folderName
-                    );
-                    console.log(childRows);
 
-                    folderRow.classList.toggle('expanded');
-                    const isVisible = folderRow.classList.contains('expanded');
-
-                    childRows.forEach(row => {
-                        row.style.display = isVisible ? '' : 'none';
-                    });
-                }
-            });
-
+            function deleteDirectory(path) {
+                Dashboard.showLoadingMsg();
+                $.ajax({
+                    type: 'POST',
+                    url: '/plugins/jellyfork/deleteDirectory',
+                    data: {
+                        path: path
+                    },
+                    success: function (response) {
+                        Dashboard.hideLoadingMsg();
+                        document.getElementById('scanMedia').click();
+                    },
+                    error: function (response) {
+                        Dashboard.hideLoadingMsg();
+                        console.log(response);
+                    }
+                });
+            }
         </script>
 
         <style>
@@ -286,6 +319,18 @@
             .folder-row.expanded:after {
               content: " ▼";
               font-size: 12px;
+            }
+            .delete-dir-button {
+                padding: 5px;
+                margin-right: 10px;
+                border-radius: 7px;
+                border: 1px solid red;
+                background: rgba(0, 0, 0, 0.5);
+                color: red;
+            }
+            .delete-dir-button:active {
+                background: red;
+                color: black;
             }
         </style>
 

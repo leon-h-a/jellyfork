@@ -20,7 +20,7 @@ namespace Jellyfin.JellyForkPlugin.JellyFork
         }
 
         [HttpPost("getmedia")]
-        public IActionResult Run([FromForm] string inputDirectory)
+        public IActionResult GetMedia([FromForm] string inputDirectory)
         {
             if (Directory.Exists(inputDirectory))
             {
@@ -84,8 +84,9 @@ namespace Jellyfin.JellyForkPlugin.JellyFork
             public required string Name { get; set; }
             public required string FullPath { get; set; }
         }
+
         [HttpPost("rename")]
-        public IActionResult Run(
+        public IActionResult Rename(
             [FromForm] string inputDirectory,
             [FromForm] string outputDirectory,
             [FromForm] string newName,
@@ -115,6 +116,24 @@ namespace Jellyfin.JellyForkPlugin.JellyFork
             { 
                 _logger.LogError($"{ex.Message}");
                 return BadRequest(new { alert = $"{ex.Message}"});
+            }
+        }
+
+        [HttpPost("deleteDirectory")]
+        public IActionResult DeleteDirectory([FromForm] string path)
+        {
+            if (Directory.Exists(path))
+            {
+                System.IO.Directory.Delete(path, true);
+                return Ok(new {
+                        alert = "Successfully deleted direcotry",
+                        data = path 
+                    }
+                );
+            }
+            else
+            {
+                return BadRequest(new { alert = "Unable to delete directory" });
             }
         }
     }
