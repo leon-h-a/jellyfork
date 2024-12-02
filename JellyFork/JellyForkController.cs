@@ -4,9 +4,10 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
 using System.Collections;
+using MediaBrowser.Common.Plugins;
 
 
-namespace Jellyfin.Plugin.JellyFork
+namespace Jellyfin.JellyForkPlugin.JellyFork
 {
     [ApiController]
     [Route("plugins/jellyfork")]
@@ -14,26 +15,39 @@ namespace Jellyfin.Plugin.JellyFork
     {
         private readonly ILogger<JellyForkController> _logger;
 
-        public JellyForkController(ILogger<JellyForkController> logger)
+        public JellyForkController(ILogger<JellyForkController> logger) 
         {
             _logger = logger;
         }
 
-        [HttpPost("run")]
-        public IActionResult Run([FromForm] string inputDirectory, [FromForm] string outputDirectory)
+        [HttpPost("getMedia")]
+        public IActionResult Run([FromForm] string inputDirectory)
         {
-            _logger.LogDebug($"input: {inputDirectory}");
-            _logger.LogDebug($"output: {outputDirectory}");
-
+            _logger.LogInformation(inputDirectory);
             if (!Directory.Exists(inputDirectory)) {
+                _logger.LogInformation("Downloads dir fail");
                 return BadRequest(new { alert = "Downloads directory does not exist" });
+            } else {
+                _logger.LogInformation("OK");
+                return Ok(new { alert = "Configuration saved successfully!" });
             }
 
-            if (!Directory.Exists(outputDirectory)) {
-                return BadRequest(new { alert = "Movies directory does not exist" });
-            }
-
-            return Ok(new { alert = "Configuration saved successfully!" });
         }
+
+        /* [HttpGet("getDefault")] */
+        /* public IActionResult GetConfiguration() */
+        /* { */
+        /*     if (_plugin != null) */
+        /*     { */
+        /*         var config = _plugin.Configuration; */
+        /*         return Ok(new */
+        /*         { */
+        /*             InputDirectory = config.InputDirectory, */
+        /*             OutputDirectory = config.OutputDirectory */
+        /*         }); */
+        /*     } */
+
+        /*     return NotFound(new { alert = "Plugin configuration not found" }); */
+        /* } */
     }
 }

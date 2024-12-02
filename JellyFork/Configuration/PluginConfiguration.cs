@@ -2,9 +2,14 @@ using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.JellyFork.Configuration;
 
-
 public class PluginConfiguration : BasePluginConfiguration
 {
-    public required string InputDirectory { get; set; }
-    public required string OutputDirectory { get; set; }
+    public PluginConfiguration()
+    {
+        InputDir = "/input/directory";
+        OutputDir = "/input/directory";
+    }
+
+    public string InputDir { get; set; }
+    public string OutputDir { get; set; }
 }
