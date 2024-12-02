@@ -45,10 +45,10 @@ sudo systemctl restart jellyfin
 4. Click on "Rename and move" to complete the action
 5. (optionaly) Delete directory from which you moved your files
 
-<p align="center">
-    <img src="Jellyfin.Plugin.JellyFork/assets/user_guide.gif" alt="user_guide"/>
-</p>
-
+<div align="center">
+    <video src="https://github.com/user-attachments/assets/9bd211e3-e6ea-43de-9af0-78ce9e567903" />
+</div>
+        
 ### Contributing
 
 All contributions are welcome!
