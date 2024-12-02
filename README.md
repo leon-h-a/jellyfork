@@ -1,7 +1,7 @@
 ## JellyFork
 
 <p align="center">
-    <img src="JellyFork/assets/jellyfork.jpg" alt="jellyfork_logo" width="400"/>
+    <img src="Jellyfin.Plugin.JellyFork/assets/jellyfork.jpg" alt="jellyfork_logo" width="400"/>
 </p>
 
 <br>
@@ -46,7 +46,7 @@ sudo systemctl restart jellyfin
 5. (optionaly) Delete directory from which you moved your files
 
 <p align="center">
-    <img src="JellyFork/assets/user_guide.gif" alt="user_guide"/>
+    <img src="Jellyfin.Plugin.JellyFork/assets/user_guide.gif" alt="user_guide"/>
 </p>
 
 ### Contributing
