@@ -1,0 +1,15 @@
+---
+name: "JellyFork"
+guid: "6aabd9ed-969f-4225-b316-6b3b33a2fddb"
+imageUrl: "https://raw.githubusercontent.com/leon-h-a/jellyfork/refs/heads/main/JellyFork/assets/jellyfork.jpg"
+version: "2.0.0.0"
+targetAbi: "10.9.11"
+framework: "net8.0"
+overview: "Manage your media files from Jellyfin"
+description: >
+  Move and rename files from your downloads directory to your media directories
+  directly from Jellyfin application.
+category: "General"
+owner: "leon-h-a"
+artifacts:
+- "Jellyfin.Plugin.JellyFork.dll"
