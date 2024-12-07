@@ -6,7 +6,7 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v8.0": {
-      "JellyFork/1.0.0": {
+      "JellyFork/2.0.0.0": {
         "dependencies": {
           "Jellyfin.Controller": "10.9.11",
           "Jellyfin.Model": "10.9.11",
@@ -264,7 +264,7 @@
     }
   },
   "libraries": {
-    "JellyFork/1.0.0": {
+    "JellyFork/2.0.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

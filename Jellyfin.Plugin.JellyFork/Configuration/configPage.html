@@ -1,323 +1,379 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>JellyFork</title>
-</head>
-<body>
-    <div id="configPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
-        <div data-role="content">
-            <div class="content-primary">
-                <form id="config">
-                    <div class="jfSection">
+    <head>
+        <meta charset="utf-8">
+        <title>JellyFork</title>
+    </head>
+    <body>
+        <div id="configPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+            <div data-role="content">
+                <div class="content-primary">
+                    <form id="config">
+                        <div class="jfSection">
 
-                        <div class="inputContainer">
-                            <label class="inputLabel inputLabelUnfocused" for="inputDirectory">Downloads directory</label>
-                            <input id="inputDirectory" is="emby-input" value="" />
-                            <div class="fieldDescription">
-                                Define directory where media is being downloaded (ie. /user/downloads)
+                            <div class="inputContainer">
+                                <label class="inputLabel inputLabelUnfocused" for="inputDirectory">Downloads directory</label>
+                                <input id="inputDirectory" is="emby-input" value="" />
+                                <div class="fieldDescription">
+                                    Define directory where media is being downloaded (ie. /user/downloads)
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="inputContainer">
-                            <label class="inputLabel inputLabelUnfocused" for="outputDirectory">Media directory</label>
-                            <input id="outputDirectory" is="emby-input" value="" />
-                            <div class="fieldDescription">
-                                Define your output directory (ie. /user/movies or /user/shows)
+                            <div class="inputContainer">
+                                <label class="inputLabel inputLabelUnfocused" for="outputDirectory">Media directory</label>
+                                <input id="outputDirectory" is="emby-input" value="" />
+                                <div class="fieldDescription">
+                                    Define your output directory (ie. /user/movies or /user/shows)
+                                </div>
                             </div>
-                        </div>
 
-                        <button type="submit" class="raised button-submit block emby-button">
-                            <span>Update configuration</span>
+                            <button type="submit" class="raised button-submit block emby-button">
+                                <span>Update configuration</span>
+                            </button>
+                        </div>
+                    </form>
+                    <br>
+
+                    <div class="jfSection ">
+                        <div>
+                            <table style="width: 100%; border-collapse: separate; border-spacing: 0 1em;" id="media-available">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%;"></th>
+                                        <th style="width: 60%;">File name</th>
+                                        <th style="width: 15%;">Ext.</th>
+                                        <th style="width: 15%;">Edit</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                        <br>
+
+                        <button id="scanMedia" class="raised button-submit block emby-button">
+                            <span>Scan for new media</span>
                         </button>
                     </div>
-                </form>
-                <br>
-
-                <div class="jfSection ">
-                    <div>
-                        <table style="width: 100%; border-collapse: separate; border-spacing: 0 1em;" id="media-available">
-                            <thead>
-                                <tr>
-                                    <th style="width: 10%;"></th>
-                                    <th style="width: 60%;">File name</th>
-                                    <th style="width: 15%;">Ext.</th>
-                                    <th style="width: 15%;">Edit</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
                     <br>
 
-                    <button id="scanMedia" class="raised button-submit block emby-button">
-                        <span>Scan for new media</span>
-                    </button>
-                </div>
-                <br>
+                    <div class="jfSection">
+                        <span>Files you selected for editing</span>
+                        <div id="selected-files">
+                        </div>
 
-                <div class="jfSection">
-                    <span>Files you selected for editing</span>
-                    <div id="selected-files">
-                    </div>
+                        <label class="inputLabel inputLabelUnfocused" for="movieMedia">Select new name</label>
+                        <input id="newNameInput" is="emby-input"/>
+                        <div class="fieldDescription">
+                            Enter new file name without extension (.mp4, .srt)
+                        </div>
+                        <br>
 
-                    <label class="inputLabel inputLabelUnfocused" for="movieMedia">Select new name</label>
-                    <input id="newNameInput" is="emby-input"/>
-                    <div class="fieldDescription">
-                        Enter new file name without extension (.mp4, .srt)
+                        <input type="checkbox" name="nest" id="nest-files"/>
+                        <label style="padding-left: 8px;" for="nest">Create folder for files</label>
+
+                        <div class="action-button-container"> 
+                            <button id="move-files" type="submit" class="action-button raised button-submit block emby-button">
+                                Move Files
+                            </button>
+
+                            <button id="copy-files" type="submit" class="action-button raised button-submit block emby-button">
+                                Copy Files
+                            </button>
+                        </div>
                     </div>
                     <br>
-
-                    <button id="newNameBtn" type="submit" class="raised button-submit block emby-button">
-                        <span>Rename and move</span>
-                    </button>
                 </div>
-                <br>
             </div>
-        </div>
 
-        <script type="text/javascript">
-            var JellyForkConfig = {
-                pluginUniqueId: '6aabd9ed-969f-4225-b316-6b3b33a2fddb'
-            };
+            <script type="text/javascript">
+                var JellyForkConfig = {
+                    pluginUniqueId: '6aabd9ed-969f-4225-b316-6b3b33a2fddb'
+                };
 
-            document.querySelector('#configPage')
-                .addEventListener('pageshow', function() {
-                    Dashboard.showLoadingMsg();
-                    ApiClient.getPluginConfiguration(JellyForkConfig.pluginUniqueId).then(function (config) {
-                        document.querySelector('#inputDirectory').value = config.InputDir;
-                        document.querySelector('#outputDirectory').value = config.OutputDir;
-                        Dashboard.hideLoadingMsg();
-                    });
-                });
-
-            document.querySelector('#config')
-                .addEventListener('submit', function(e) {
-                    Dashboard.showLoadingMsg();
-                    ApiClient.getPluginConfiguration(JellyForkConfig.pluginUniqueId).then(function (config) {
-                        config.InputDir = document.querySelector('#inputDirectory').value;
-                        config.OutputDir = document.querySelector('#outputDirectory').value;
-                        ApiClient.updatePluginConfiguration(JellyForkConfig.pluginUniqueId, config).then(function (result) {
-                            Dashboard.processPluginConfigurationUpdateResult(result);
+                document.querySelector('#configPage')
+                    .addEventListener('pageshow', function() {
+                        Dashboard.showLoadingMsg();
+                        ApiClient.getPluginConfiguration(JellyForkConfig.pluginUniqueId).then(function (config) {
+                            document.querySelector('#inputDirectory').value = config.InputDir;
+                            document.querySelector('#outputDirectory').value = config.OutputDir;
+                            Dashboard.hideLoadingMsg();
                         });
                     });
-                    e.preventDefault();
-                    return false;
-                });
 
-            const getFileExtension = (filename) => {
-                const parts = filename.split('.');
-                return parts.length > 1 ? parts.pop() : 'N/A';
-            };
+                document.querySelector('#config')
+                    .addEventListener('submit', function(e) {
+                        Dashboard.showLoadingMsg();
+                        ApiClient.getPluginConfiguration(JellyForkConfig.pluginUniqueId).then(function (config) {
+                            config.InputDir = document.querySelector('#inputDirectory').value;
+                            config.OutputDir = document.querySelector('#outputDirectory').value;
+                            ApiClient.updatePluginConfiguration(JellyForkConfig.pluginUniqueId, config).then(function (result) {
+                                Dashboard.processPluginConfigurationUpdateResult(result);
+                            });
+                        });
+                        e.preventDefault();
+                        return false;
+                    });
 
-            function processDirectory(directory, parentClass = '', depth = 0) {
-                const tableBody = document.querySelector('#media-available tbody');
+                const getFileExtension = (filename) => {
+                    const parts = filename.split('.');
+                    return parts.length > 1 ? parts.pop() : 'N/A';
+                };
 
-                if (directory.Subdirectories && Array.isArray(directory.Subdirectories)) {
-                    directory.Subdirectories.forEach(subdirectory => {
-                        
-                        const folderRow = document.createElement('tr');
+                function processDirectory(directory, parentClass = '', depth = 0) {
+                    const tableBody = document.querySelector('#media-available tbody');
 
-                        if (depth <= 0) {
-                            const folderDelete = document.createElement('button');
-                            folderDelete.className = "delete-dir-button";
-                            folderDelete.textContent = "Delete";
-                            folderDelete.onclick = () => deleteDirectory(subdirectory.FullPath);
-                            folderRow.appendChild(folderDelete);
-                        }
+                    if (directory.Subdirectories && Array.isArray(directory.Subdirectories)) {
+                        directory.Subdirectories.forEach(subdirectory => {
 
-                        folderRow.className = 'folder-row ' + parentClass.replace(/[^a-zA-Z0-9_-]/g, '_');
-                        folderRow.setAttribute('data-folder', subdirectory.Name);
-                        folderRow.style.display = parentClass ? 'none' : '';
+                            const folderRow = document.createElement('tr');
 
-                        const folderCell = document.createElement('td');
-                        folderCell.className = "folder-name truncated";
-                        folderCell.colSpan = 1;
-                        folderCell.textContent = subdirectory.Name;
-                        folderCell.setAttribute('data-fullpath', subdirectory.FullPath);
-                        folderCell.onclick = () => expandChildElements(folderRow);
-                        folderRow.appendChild(folderCell);
+                            if (depth <= 0) {
+                                const folderDelete = document.createElement('button');
+                                folderDelete.className = "delete-dir-button";
+                                folderDelete.textContent = "Delete";
+                                folderDelete.onclick = () => deleteDirectory(subdirectory.FullPath);
+                                folderRow.appendChild(folderDelete);
+                            }
 
-                        tableBody.appendChild(folderRow);
+                            folderRow.className = 'folder-row ' + parentClass.replace(/[^a-zA-Z0-9_-]/g, '_');
+                            folderRow.setAttribute('data-folder', subdirectory.Name);
+                            folderRow.style.display = parentClass ? 'none' : '';
 
-                        <!-- Issue ref: #10 -->
-                        if (parentClass === '') {
-                            processDirectory(subdirectory, 'folder-' + subdirectory.Name, depth+1);
-                        } else {
-                            processDirectory(subdirectory, 'folder-' + directory.Name, depth+1);
-                        }
+                            const folderCell = document.createElement('td');
+                            folderCell.className = "folder-name truncated";
+                            folderCell.colSpan = 1;
+                            folderCell.textContent = subdirectory.Name;
+                            folderCell.setAttribute('data-fullpath', subdirectory.FullPath);
+                            folderCell.onclick = () => expandChildElements(folderRow);
+                            folderRow.appendChild(folderCell);
+
+                            tableBody.appendChild(folderRow);
+
+                            <!-- Issue ref: #10 -->
+                                if (parentClass === '') {
+                                    processDirectory(subdirectory, 'folder-' + subdirectory.Name, depth+1);
+                                } else {
+                                    processDirectory(subdirectory, 'folder-' + directory.Name, depth+1);
+                                }
+                        });
+                    }
+
+                    if (directory.Files && Array.isArray(directory.Files)) {
+                        directory.Files.forEach(file => {
+                            const row = document.createElement('tr');
+                            row.className = 'file-row ' + parentClass.replace(/[^a-zA-Z0-9_-]/g, '_');
+                            row.style.display = parentClass ? 'none' : '';
+
+                            const fillerCell = document.createElement('div');
+                            row.appendChild(fillerCell);
+
+                            const fileCell = document.createElement('td');
+                            fileCell.className = "truncated";
+                            fileCell.textContent = file.Name;
+                            fileCell.setAttribute('data-fullpath', file.FullPath);
+                            row.appendChild(fileCell);
+
+                            const extCell = document.createElement('td');
+                            extCell.setAttribute('class', "ext-cell");
+                            extCell.textContent = getFileExtension(file.Name);
+                            row.appendChild(extCell);
+
+                            const editCell = document.createElement('td');
+                            const checkbox = document.createElement('input');
+                            editCell.setAttribute('class', "edit-cell");
+                            checkbox.setAttribute('data-name', file.Name);
+                            checkbox.type = 'checkbox';
+                            checkbox.value = file.FullPath;
+
+                            checkbox.onchange = () => {
+                                if (checkbox.checked) {
+                                    onChecked(checkbox);
+                                } else {
+                                    onUnchecked(checkbox);
+                                }
+                            }
+                            editCell.appendChild(checkbox);
+                            row.appendChild(editCell);
+
+                            tableBody.appendChild(row);
+                        });
+                    }
+                }
+
+                function onChecked (element) {
+                    const selectedList = document.getElementById('selected-files');
+                    const checkedFile = document.createElement('div');
+                    checkedFile.setAttribute('id', element.value.replace(/[^a-zA-Z0-9_-]/g, '_'));
+                    checkedFile.setAttribute('class', 'checked-item');
+
+                    checkedFile.textContent = element.getAttribute('data-name');
+                    selectedList.appendChild(checkedFile);
+                }
+
+                function onUnchecked (element) {
+                    const selectedList = document.getElementById('selected-files');
+                    const uncheckedFile = document.getElementById(element.value.replace(/[^a-zA-Z0-9_-]/g, '_'));
+                    selectedList.removeChild(uncheckedFile);
+                }
+
+                document.getElementById('scanMedia')
+                    .addEventListener('click', () => { 
+                        Dashboard.showLoadingMsg();
+                        const table = document.getElementById('media-available');
+                        const rows = table.querySelectorAll('tbody tr');
+                        rows.forEach(row => row.remove());
+
+                        $.ajax({
+                            type: 'POST',
+                            url: '/plugins/jellyfork/getmedia',
+                            data: {
+                                inputDirectory: document.querySelector('#inputDirectory').value
+                            },
+                            success: function (response) {
+                                cleanup();
+                                rootDir = JSON.parse(response.data);
+                                Dashboard.hideLoadingMsg();
+                                processDirectory(rootDir);
+                            },
+                            error: function (response) {
+                                Dashboard.hideLoadingMsg();
+                                console.log('error');
+                            }
+                        });
+                    });
+
+                document.getElementById('move-files')
+                    .addEventListener('click', () => { 
+                        Dashboard.showLoadingMsg();
+
+                        var newNameStr = document.querySelector('#newNameInput').value;
+
+                        const table = document.getElementById('media-available');
+                        const selectedFiles = [];
+                        const rows = table.querySelectorAll('tbody tr');
+
+                        rows.forEach(row => {
+                            const checkbox = row.querySelector('input[type="checkbox"]');
+                            if (checkbox && checkbox.checked) {
+                                const filenameCell = row.querySelector('td:nth-child(2)');
+                                if (filenameCell) {
+                                    selectedFiles.push(filenameCell.getAttribute("data-fullpath").trim());
+                                }
+                            }
+                        });
+                        var nest = document.getElementById('nest-files').checked;
+
+                        $.ajax({
+                            type: 'POST',
+                            url: '/plugins/jellyfork/manipulate',
+                            data: {
+                                inputDirectory: document.querySelector('#inputDirectory').value,
+                                outputDirectory: document.querySelector('#outputDirectory').value,
+                                newName: document.querySelector('#newNameInput').value,
+                                files: selectedFiles,
+                                nest: nest,
+                                copy: false
+                            },
+                            success: function (response) {
+                                console.log(response);
+                                Dashboard.hideLoadingMsg();
+                                document.getElementById('scanMedia').click();
+                            },
+                            error: function (response) {
+                                console.log(response);
+                                Dashboard.hideLoadingMsg();
+                            }
+                        });
+                    });
+
+                document.getElementById('copy-files')
+                    .addEventListener('click', () => { 
+                        Dashboard.showLoadingMsg();
+
+                        var newNameStr = document.querySelector('#newNameInput').value;
+
+                        const table = document.getElementById('media-available');
+                        const selectedFiles = [];
+                        const rows = table.querySelectorAll('tbody tr');
+
+                        rows.forEach(row => {
+                            const checkbox = row.querySelector('input[type="checkbox"]');
+                            if (checkbox && checkbox.checked) {
+                                const filenameCell = row.querySelector('td:nth-child(2)');
+                                if (filenameCell) {
+                                    selectedFiles.push(filenameCell.getAttribute("data-fullpath").trim());
+                                }
+                            }
+                        });
+                        var nest = document.getElementById('nest-files').checked;
+
+                        $.ajax({
+                            type: 'POST',
+                            url: '/plugins/jellyfork/manipulate',
+                            data: {
+                                inputDirectory: document.querySelector('#inputDirectory').value,
+                                outputDirectory: document.querySelector('#outputDirectory').value,
+                                newName: document.querySelector('#newNameInput').value,
+                                files: selectedFiles,
+                                nest: nest,
+                                copy: true
+                            },
+                            success: function (response) {
+                                console.log(response);
+                                Dashboard.hideLoadingMsg();
+                                document.getElementById('scanMedia').click();
+                            },
+                            error: function (response) {
+                                console.log(response);
+                                Dashboard.hideLoadingMsg();
+                            }
+                        });
+                    });
+
+                function expandChildElements(folderRow) {
+                    const tableBody = document.querySelector('#media-available tbody');
+                    const folderName = folderRow.getAttribute('data-folder').replace(/[^a-zA-Z0-9_-]/g, '_');
+                    const childRows = tableBody.querySelectorAll(
+                        '.file-row.folder-' + folderName, '.folder-row.folder-' + folderName
+                    );
+                    folderRow.classList.toggle('expanded');
+                    const isVisible = folderRow.classList.contains('expanded');
+                    childRows.forEach(row => {
+                        row.style.display = isVisible ? '' : 'none';
                     });
                 }
 
-                if (directory.Files && Array.isArray(directory.Files)) {
-                    directory.Files.forEach(file => {
-                        const row = document.createElement('tr');
-                        row.className = 'file-row ' + parentClass.replace(/[^a-zA-Z0-9_-]/g, '_');
-                        row.style.display = parentClass ? 'none' : '';
 
-                        const fillerCell = document.createElement('div');
-                        row.appendChild(fillerCell);
-
-                        const fileCell = document.createElement('td');
-                        fileCell.className = "truncated";
-                        fileCell.textContent = file.Name;
-                        fileCell.setAttribute('data-fullpath', file.FullPath);
-                        row.appendChild(fileCell);
-
-                        const extCell = document.createElement('td');
-                        extCell.setAttribute('class', "ext-cell");
-                        extCell.textContent = getFileExtension(file.Name);
-                        row.appendChild(extCell);
-
-                        const editCell = document.createElement('td');
-                        const checkbox = document.createElement('input');
-                        editCell.setAttribute('class', "edit-cell");
-                        checkbox.setAttribute('data-name', file.Name);
-                        checkbox.type = 'checkbox';
-                        checkbox.value = file.FullPath;
-
-                        checkbox.onchange = () => {
-                            if (checkbox.checked) {
-                                onChecked(checkbox);
-                            } else {
-                                onUnchecked(checkbox);
-                            }
-                        }
-                        editCell.appendChild(checkbox);
-                        row.appendChild(editCell);
-
-                        tableBody.appendChild(row);
-                    });
-                }
-            }
-
-            function onChecked (element) {
-                const selectedList = document.getElementById('selected-files');
-                const checkedFile = document.createElement('div');
-                checkedFile.setAttribute('id', element.value.replace(/[^a-zA-Z0-9_-]/g, '_'));
-                checkedFile.setAttribute('class', 'checked-item');
-
-                checkedFile.textContent = element.getAttribute('data-name');
-                selectedList.appendChild(checkedFile);
-            }
-
-            function onUnchecked (element) {
-                const selectedList = document.getElementById('selected-files');
-                const uncheckedFile = document.getElementById(element.value.replace(/[^a-zA-Z0-9_-]/g, '_'));
-                selectedList.removeChild(uncheckedFile);
-            }
-
-            document.getElementById('scanMedia')
-                .addEventListener('click', () => { 
+                function deleteDirectory(path) {
                     Dashboard.showLoadingMsg();
-                    const table = document.getElementById('media-available');
-                    const rows = table.querySelectorAll('tbody tr');
-                    rows.forEach(row => row.remove());
-
                     $.ajax({
                         type: 'POST',
-                        url: '/plugins/jellyfork/getmedia',
+                        url: '/plugins/jellyfork/deleteDirectory',
                         data: {
-                            inputDirectory: document.querySelector('#inputDirectory').value
+                            path: path
                         },
                         success: function (response) {
-                            cleanup();
-                            rootDir = JSON.parse(response.data);
-                            Dashboard.hideLoadingMsg();
-                            processDirectory(rootDir);
-                        },
-                        error: function (response) {
-                            Dashboard.hideLoadingMsg();
-                            console.log('error');
-                        }
-                    });
-                });
-
-            document.getElementById('newNameBtn')
-                .addEventListener('click', () => { 
-                    Dashboard.showLoadingMsg();
-
-                    var newNameStr = document.querySelector('#newNameInput').value;
-
-                    const table = document.getElementById('media-available');
-                    const selectedFiles = [];
-                    const rows = table.querySelectorAll('tbody tr');
-
-                    rows.forEach(row => {
-                        const checkbox = row.querySelector('input[type="checkbox"]');
-                        if (checkbox && checkbox.checked) {
-                            const filenameCell = row.querySelector('td:nth-child(2)');
-                            if (filenameCell) {
-                                selectedFiles.push(filenameCell.getAttribute("data-fullpath").trim());
-                            }
-                        }
-                    });
-
-                    $.ajax({
-                        type: 'POST',
-                        url: '/plugins/jellyfork/rename',
-                        data: {
-                            inputDirectory: document.querySelector('#inputDirectory').value,
-                            outputDirectory: document.querySelector('#outputDirectory').value,
-                            newName: document.querySelector('#newNameInput').value,
-                            files: selectedFiles
-                        },
-                        success: function (response) {
-                            console.log(response);
                             Dashboard.hideLoadingMsg();
                             document.getElementById('scanMedia').click();
                         },
                         error: function (response) {
-                            console.log(response);
                             Dashboard.hideLoadingMsg();
+                            console.log(response);
                         }
                     });
-                });
+                }
 
-            function expandChildElements(folderRow) {
-                const tableBody = document.querySelector('#media-available tbody');
-                const folderName = folderRow.getAttribute('data-folder').replace(/[^a-zA-Z0-9_-]/g, '_');
-                const childRows = tableBody.querySelectorAll(
-                    '.file-row.folder-' + folderName, '.folder-row.folder-' + folderName
-                );
-                folderRow.classList.toggle('expanded');
-                const isVisible = folderRow.classList.contains('expanded');
-                childRows.forEach(row => {
-                    row.style.display = isVisible ? '' : 'none';
-                });
-            }
+                function cleanup() {
+                    document.getElementById('selected-files').innerHTML = '';
+                    document.getElementById('newNameInput').value = '';
+                }
+            </script>
 
-
-            function deleteDirectory(path) {
-                Dashboard.showLoadingMsg();
-                $.ajax({
-                    type: 'POST',
-                    url: '/plugins/jellyfork/deleteDirectory',
-                    data: {
-                        path: path
-                    },
-                    success: function (response) {
-                        Dashboard.hideLoadingMsg();
-                        document.getElementById('scanMedia').click();
-                    },
-                    error: function (response) {
-                        Dashboard.hideLoadingMsg();
-                        console.log(response);
-                    }
-                });
-            }
-            
-            function cleanup() {
-                document.getElementById('selected-files').innerHTML = '';
-                document.getElementById('newNameInput').value = '';
-            }
-        </script>
-
-        <style>
-            .fileExtension {
-                text-align: center;
-            }
+            <style>
+.fileExtension {
+    text-align: center;
+}
             .fileSelected {
                 text-align: center;
             }
@@ -344,20 +400,20 @@
             }
 
             .file-row td {
-              padding-left: 20px;
-              opacity: 0.75;
+                padding-left: 20px;
+                opacity: 0.75;
             }
             .folder-row {
-              font-weight: bold;
-              cursor: pointer;
+                font-weight: bold;
+                cursor: pointer;
             }
             .folder-row:after {
-              content: " ▶";
-              font-size: 12px;
+                content: " ▶";
+                font-size: 12px;
             }
             .folder-row.expanded:after {
-              content: " ▼";
-              font-size: 12px;
+                content: " ▼";
+                font-size: 12px;
             }
             .delete-dir-button {
                 padding: 5px;
@@ -390,8 +446,24 @@
                 word-break: break-word;
                 user-select: none;
             }
-        </style>
+            .action-button-container {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 20px;
+            }
+            #nest-files {
+                margin: 10px 0;
+            }
+            #move-files {
+                width: 40%;
+                margin: auto;
+            }
+            #copy-files {
+                width: 40%;
+                margin: auto;
+            }
+            </style>
 
-    </div>
-</body>
+        </div>
+    </body>
 </html>

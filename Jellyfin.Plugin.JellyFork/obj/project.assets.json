@@ -1519,13 +1519,13 @@
     "/home/media/.nuget/packages/": {}
   },
   "project": {
-    "version": "1.0.0",
+    "version": "2.0.0",
     "restore": {
-      "projectUniqueName": "/home/media/jellyfork/JellyFork/JellyFork.csproj",
+      "projectUniqueName": "/home/media/jellyfork/Jellyfin.Plugin.JellyFork/JellyFork.csproj",
       "projectName": "JellyFork",
-      "projectPath": "/home/media/jellyfork/JellyFork/JellyFork.csproj",
+      "projectPath": "/home/media/jellyfork/Jellyfin.Plugin.JellyFork/JellyFork.csproj",
       "packagesPath": "/home/media/.nuget/packages/",
-      "outputPath": "/home/media/jellyfork/JellyFork/obj/",
+      "outputPath": "/home/media/jellyfork/Jellyfin.Plugin.JellyFork/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/home/media/.nuget/NuGet/NuGet.Config"

@@ -85,30 +85,50 @@ namespace Jellyfin.JellyForkPlugin.JellyFork
             public required string FullPath { get; set; }
         }
 
-        [HttpPost("rename")]
-        public IActionResult Rename(
+        [HttpPost("manipulate")]
+        public IActionResult Manipulate(
             [FromForm] string inputDirectory,
             [FromForm] string outputDirectory,
             [FromForm] string newName,
-            [FromForm] List<String> files
+            [FromForm] List<String> files,
+            [FromForm] bool nest,
+            [FromForm] bool copy
         )
         {
-            _logger.LogDebug(inputDirectory);
-            _logger.LogDebug(outputDirectory);
-            _logger.LogDebug(newName);
-            _logger.LogDebug(string.Join(", ", files));
-
             try
             {
+                string nestedDir = string.Empty;
+                if (nest)
+                {
+                    nestedDir = Path.Combine(outputDirectory, newName);
+                    System.IO.Directory.CreateDirectory(nestedDir);
+                }
+
                 foreach (var file in files)
                 {
                     string oldFilePath = Path.Combine(inputDirectory, file);
                     _logger.LogInformation(oldFilePath);
                     string extension = Path.GetExtension(file);
-                    string newFilePath = Path.Combine(outputDirectory, newName + extension);
-                    _logger.LogInformation(newFilePath);
 
-                    System.IO.File.Move(oldFilePath, newFilePath);
+                    string newFilePath;
+                    if (nest)
+                    {
+                        newFilePath = Path.Combine(nestedDir, newName + extension);
+                    }
+                    else
+                    {
+                        newFilePath = Path.Combine(outputDirectory, newName + extension);
+                    }
+
+                    _logger.LogInformation(newFilePath);
+                    if (copy)
+                    {
+                        System.IO.File.Copy(oldFilePath, newFilePath);
+                    }
+                    else
+                    {
+                        System.IO.File.Move(oldFilePath, newFilePath);
+                    }
                 }
                 return Ok(new { alert = "Action success"});
             }
@@ -126,7 +146,7 @@ namespace Jellyfin.JellyForkPlugin.JellyFork
             {
                 System.IO.Directory.Delete(path, true);
                 return Ok(new {
-                        alert = "Successfully deleted direcotry",
+                        alert = "Successfully deleted directory",
                         data = path 
                     }
                 );
