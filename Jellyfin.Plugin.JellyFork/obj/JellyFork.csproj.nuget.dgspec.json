@@ -45,15 +45,15 @@
           "dependencies": {
             "Jellyfin.Controller": {
               "target": "Package",
-              "version": "[10.9.11, )"
+              "version": "[*, )"
             },
             "Jellyfin.Model": {
               "target": "Package",
-              "version": "[10.9.11, )"
+              "version": "[*, )"
             },
             "Microsoft.Extensions.Logging.Abstractions": {
               "target": "Package",
-              "version": "[8.0.1, )"
+              "version": "[8.0.2, )"
             }
           },
           "imports": [
@@ -72,7 +72,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.403/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.405/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

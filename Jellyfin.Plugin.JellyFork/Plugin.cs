@@ -25,7 +25,7 @@ public class JellyForkPlugin : BasePlugin<PluginConfiguration>, IHasWebPages
         _logger = logger;
     }
     public override string Name => "JellyFork";
-    public override string Description => "Move and rename new downloads to media directory";
+    public override string Description => "Move, copy and rename files from your downloads directory to your media directories";
     public override Guid Id => Guid.Parse("6aabd9ed-969f-4225-b316-6b3b33a2fddb");
     public static JellyForkPlugin? Instance { get; private set; }
 
