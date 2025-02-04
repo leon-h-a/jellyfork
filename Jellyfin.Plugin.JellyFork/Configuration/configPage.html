@@ -27,6 +27,8 @@
                                 </div>
                             </div>
 
+                            <div id="directory-response" style="min-height: 30px; text-align: center; width: 100%;"></div>
+
                             <button type="submit" class="raised button-submit block emby-button">
                                 <span>Update configuration</span>
                             </button>
@@ -58,7 +60,7 @@
                     <br>
 
                     <div class="jfSection">
-                        <span>Files you selected for editing</span>
+                        <span>Files selected for editing</span>
                         <div id="selected-files">
                         </div>
 
@@ -70,7 +72,7 @@
                         <br>
 
                         <input type="checkbox" name="nest" id="nest-files"/>
-                        <label style="padding-left: 8px;" for="nest">Create folder for files</label>
+                        <label style="padding-left: 8px;" for="nest">Create a sub-folder for the files</label>
 
                         <div class="action-button-container"> 
                             <button id="move-files" type="submit" class="action-button raised button-submit block emby-button">
@@ -81,296 +83,347 @@
                                 Copy Files
                             </button>
                         </div>
+                        <div id="action-response" style="min-height: 30px; margin-top: 30px; text-align: center; width: 100%;"></div>
                     </div>
                     <br>
                 </div>
             </div>
 
-            <script type="text/javascript">
-                var JellyForkConfig = {
-                    pluginUniqueId: '6aabd9ed-969f-4225-b316-6b3b33a2fddb'
-                };
+        <script type="text/javascript">
+            var JellyForkConfig = {
+                pluginUniqueId: '6aabd9ed-969f-4225-b316-6b3b33a2fddb'
+            };
 
-                document.querySelector('#configPage')
-                    .addEventListener('pageshow', function() {
-                        Dashboard.showLoadingMsg();
-                        ApiClient.getPluginConfiguration(JellyForkConfig.pluginUniqueId).then(function (config) {
-                            document.querySelector('#inputDirectory').value = config.InputDir;
-                            document.querySelector('#outputDirectory').value = config.OutputDir;
-                            Dashboard.hideLoadingMsg();
-                        });
-                    });
+            function fadeOut(elem) {
+                elem.style.visibility = "hidden";
+                elem.style.opacity = 0;
+                elem.style.transition = "visibility 0s 4s, opacity 4s linear";
+            }
 
-                document.querySelector('#config')
-                    .addEventListener('submit', function(e) {
-                        Dashboard.showLoadingMsg();
-                        ApiClient.getPluginConfiguration(JellyForkConfig.pluginUniqueId).then(function (config) {
-                            config.InputDir = document.querySelector('#inputDirectory').value;
-                            config.OutputDir = document.querySelector('#outputDirectory').value;
-                            ApiClient.updatePluginConfiguration(JellyForkConfig.pluginUniqueId, config).then(function (result) {
-                                Dashboard.processPluginConfigurationUpdateResult(result);
-                            });
-                        });
-                        e.preventDefault();
-                        return false;
-                    });
+            function fadeReset(elem) {
+                elem.style.visibility = "visible";
+                elem.style.opacity = 1;
+                elem.style.transition = "none";
+            }
 
-                const getFileExtension = (filename) => {
-                    const parts = filename.split('.');
-                    return parts.length > 1 ? parts.pop() : 'N/A';
-                };
-
-                function processDirectory(directory, parentClass = '', depth = 0) {
-                    const tableBody = document.querySelector('#media-available tbody');
-
-                    if (directory.Subdirectories && Array.isArray(directory.Subdirectories)) {
-                        directory.Subdirectories.forEach(subdirectory => {
-
-                            const folderRow = document.createElement('tr');
-
-                            if (depth <= 0) {
-                                const folderDelete = document.createElement('button');
-                                folderDelete.className = "delete-dir-button";
-                                folderDelete.textContent = "Delete";
-                                folderDelete.onclick = () => deleteDirectory(subdirectory.FullPath);
-                                folderRow.appendChild(folderDelete);
-                            }
-
-                            folderRow.className = 'folder-row ' + parentClass.replace(/[^a-zA-Z0-9_-]/g, '_');
-                            folderRow.setAttribute('data-folder', subdirectory.Name);
-                            folderRow.style.display = parentClass ? 'none' : '';
-
-                            const folderCell = document.createElement('td');
-                            folderCell.className = "folder-name truncated";
-                            folderCell.colSpan = 1;
-                            folderCell.textContent = subdirectory.Name;
-                            folderCell.setAttribute('data-fullpath', subdirectory.FullPath);
-                            folderCell.onclick = () => expandChildElements(folderRow);
-                            folderRow.appendChild(folderCell);
-
-                            tableBody.appendChild(folderRow);
-
-                            <!-- Issue ref: #10 -->
-                                if (parentClass === '') {
-                                    processDirectory(subdirectory, 'folder-' + subdirectory.Name, depth+1);
-                                } else {
-                                    processDirectory(subdirectory, 'folder-' + directory.Name, depth+1);
-                                }
-                        });
-                    }
-
-                    if (directory.Files && Array.isArray(directory.Files)) {
-                        directory.Files.forEach(file => {
-                            const row = document.createElement('tr');
-                            row.className = 'file-row ' + parentClass.replace(/[^a-zA-Z0-9_-]/g, '_');
-                            row.style.display = parentClass ? 'none' : '';
-
-                            const fillerCell = document.createElement('div');
-                            row.appendChild(fillerCell);
-
-                            const fileCell = document.createElement('td');
-                            fileCell.className = "truncated";
-                            fileCell.textContent = file.Name;
-                            fileCell.setAttribute('data-fullpath', file.FullPath);
-                            row.appendChild(fileCell);
-
-                            const extCell = document.createElement('td');
-                            extCell.setAttribute('class', "ext-cell");
-                            extCell.textContent = getFileExtension(file.Name);
-                            row.appendChild(extCell);
-
-                            const editCell = document.createElement('td');
-                            const checkbox = document.createElement('input');
-                            editCell.setAttribute('class', "edit-cell");
-                            checkbox.setAttribute('data-name', file.Name);
-                            checkbox.type = 'checkbox';
-                            checkbox.value = file.FullPath;
-
-                            checkbox.onchange = () => {
-                                if (checkbox.checked) {
-                                    onChecked(checkbox);
-                                } else {
-                                    onUnchecked(checkbox);
-                                }
-                            }
-                            editCell.appendChild(checkbox);
-                            row.appendChild(editCell);
-
-                            tableBody.appendChild(row);
-                        });
-                    }
-                }
-
-                function onChecked (element) {
-                    const selectedList = document.getElementById('selected-files');
-                    const checkedFile = document.createElement('div');
-                    checkedFile.setAttribute('id', element.value.replace(/[^a-zA-Z0-9_-]/g, '_'));
-                    checkedFile.setAttribute('class', 'checked-item');
-
-                    checkedFile.textContent = element.getAttribute('data-name');
-                    selectedList.appendChild(checkedFile);
-                }
-
-                function onUnchecked (element) {
-                    const selectedList = document.getElementById('selected-files');
-                    const uncheckedFile = document.getElementById(element.value.replace(/[^a-zA-Z0-9_-]/g, '_'));
-                    selectedList.removeChild(uncheckedFile);
-                }
-
-                document.getElementById('scanMedia')
-                    .addEventListener('click', () => { 
-                        Dashboard.showLoadingMsg();
-                        const table = document.getElementById('media-available');
-                        const rows = table.querySelectorAll('tbody tr');
-                        rows.forEach(row => row.remove());
-
-                        $.ajax({
-                            type: 'POST',
-                            url: '/plugins/jellyfork/getmedia',
-                            data: {
-                                inputDirectory: document.querySelector('#inputDirectory').value
-                            },
-                            success: function (response) {
-                                cleanup();
-                                rootDir = JSON.parse(response.data);
-                                Dashboard.hideLoadingMsg();
-                                processDirectory(rootDir);
-                            },
-                            error: function (response) {
-                                Dashboard.hideLoadingMsg();
-                                console.log('error');
-                            }
-                        });
-                    });
-
-                document.getElementById('move-files')
-                    .addEventListener('click', () => { 
-                        Dashboard.showLoadingMsg();
-
-                        var newNameStr = document.querySelector('#newNameInput').value;
-
-                        const table = document.getElementById('media-available');
-                        const selectedFiles = [];
-                        const rows = table.querySelectorAll('tbody tr');
-
-                        rows.forEach(row => {
-                            const checkbox = row.querySelector('input[type="checkbox"]');
-                            if (checkbox && checkbox.checked) {
-                                const filenameCell = row.querySelector('td:nth-child(2)');
-                                if (filenameCell) {
-                                    selectedFiles.push(filenameCell.getAttribute("data-fullpath").trim());
-                                }
-                            }
-                        });
-                        var nest = document.getElementById('nest-files').checked;
-
-                        $.ajax({
-                            type: 'POST',
-                            url: '/plugins/jellyfork/manipulate',
-                            data: {
-                                inputDirectory: document.querySelector('#inputDirectory').value,
-                                outputDirectory: document.querySelector('#outputDirectory').value,
-                                newName: document.querySelector('#newNameInput').value,
-                                files: selectedFiles,
-                                nest: nest,
-                                copy: false
-                            },
-                            success: function (response) {
-                                console.log(response);
-                                Dashboard.hideLoadingMsg();
-                                document.getElementById('scanMedia').click();
-                            },
-                            error: function (response) {
-                                console.log(response);
-                                Dashboard.hideLoadingMsg();
-                            }
-                        });
-                    });
-
-                document.getElementById('copy-files')
-                    .addEventListener('click', () => { 
-                        Dashboard.showLoadingMsg();
-
-                        var newNameStr = document.querySelector('#newNameInput').value;
-
-                        const table = document.getElementById('media-available');
-                        const selectedFiles = [];
-                        const rows = table.querySelectorAll('tbody tr');
-
-                        rows.forEach(row => {
-                            const checkbox = row.querySelector('input[type="checkbox"]');
-                            if (checkbox && checkbox.checked) {
-                                const filenameCell = row.querySelector('td:nth-child(2)');
-                                if (filenameCell) {
-                                    selectedFiles.push(filenameCell.getAttribute("data-fullpath").trim());
-                                }
-                            }
-                        });
-                        var nest = document.getElementById('nest-files').checked;
-
-                        $.ajax({
-                            type: 'POST',
-                            url: '/plugins/jellyfork/manipulate',
-                            data: {
-                                inputDirectory: document.querySelector('#inputDirectory').value,
-                                outputDirectory: document.querySelector('#outputDirectory').value,
-                                newName: document.querySelector('#newNameInput').value,
-                                files: selectedFiles,
-                                nest: nest,
-                                copy: true
-                            },
-                            success: function (response) {
-                                console.log(response);
-                                Dashboard.hideLoadingMsg();
-                                document.getElementById('scanMedia').click();
-                            },
-                            error: function (response) {
-                                console.log(response);
-                                Dashboard.hideLoadingMsg();
-                            }
-                        });
-                    });
-
-                function expandChildElements(folderRow) {
-                    const tableBody = document.querySelector('#media-available tbody');
-                    const folderName = folderRow.getAttribute('data-folder').replace(/[^a-zA-Z0-9_-]/g, '_');
-                    const childRows = tableBody.querySelectorAll(
-                        '.file-row.folder-' + folderName, '.folder-row.folder-' + folderName
-                    );
-                    folderRow.classList.toggle('expanded');
-                    const isVisible = folderRow.classList.contains('expanded');
-                    childRows.forEach(row => {
-                        row.style.display = isVisible ? '' : 'none';
-                    });
-                }
-
-
-                function deleteDirectory(path) {
+            document.querySelector('#configPage')
+                .addEventListener('pageshow', function() {
                     Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(JellyForkConfig.pluginUniqueId).then(function (config) {
+                        document.querySelector('#inputDirectory').value = config.InputDir;
+                        document.querySelector('#outputDirectory').value = config.OutputDir;
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+            document.querySelector('#config')
+                .addEventListener('submit', function(e) {
+
+                    Dashboard.showLoadingMsg();
+                    let respBox = document.querySelector('#directory-response')
+                    fadeReset(respBox);
+
                     $.ajax({
                         type: 'POST',
-                        url: '/plugins/jellyfork/deleteDirectory',
+                        url: '/plugins/jellyfork/setdirectories',
                         data: {
-                            path: path
+                            inputDirectory: document.querySelector('#inputDirectory').value,
+                            outputDirectory: document.querySelector('#outputDirectory').value
                         },
                         success: function (response) {
+                            respBox.innerText = response;
+                            respBox.style.color = "#06fb06";
+                            fadeOut(respBox);
+                            ApiClient.getPluginConfiguration(JellyForkConfig.pluginUniqueId).then(function (config) {
+                                config.InputDir = document.querySelector('#inputDirectory').value;
+                                config.OutputDir = document.querySelector('#outputDirectory').value;
+                                ApiClient.updatePluginConfiguration(JellyForkConfig.pluginUniqueId, config).then(function (result) {
+                                    Dashboard.processPluginConfigurationUpdateResult(result);
+                                });
+                            });
+
                             Dashboard.hideLoadingMsg();
-                            document.getElementById('scanMedia').click();
+                        },
+                        error: function (response) {
+                            let respBox = document.querySelector('#directory-response')
+                            respBox.innerText = response.responseJSON;
+                            respBox.style.color = "#ff0000";
+                            fadeOut(respBox);
+                            Dashboard.hideLoadingMsg();
+                        }
+                    });
+
+                    e.preventDefault();
+                    return false;
+                });
+
+            const getFileExtension = (filename) => {
+                const parts = filename.split('.');
+                return parts.length > 1 ? parts.pop() : 'N/A';
+            };
+
+            function processDirectory(directory, parentClass = '', depth = 0) {
+                const tableBody = document.querySelector('#media-available tbody');
+
+                if (directory.Subdirectories && Array.isArray(directory.Subdirectories)) {
+                    directory.Subdirectories.forEach(subdirectory => {
+
+                        const folderRow = document.createElement('tr');
+
+                        if (depth <= 0) {
+                            const folderDelete = document.createElement('button');
+                            folderDelete.className = "delete-dir-button";
+                            folderDelete.textContent = "Delete";
+                            folderDelete.onclick = () => deleteDirectory(subdirectory.FullPath);
+                            folderRow.appendChild(folderDelete);
+                        }
+
+                        folderRow.className = 'folder-row ' + parentClass.replace(/[^a-zA-Z0-9_-]/g, '_');
+                        folderRow.setAttribute('data-folder', subdirectory.Name);
+                        folderRow.style.display = parentClass ? 'none' : '';
+
+                        const folderCell = document.createElement('td');
+                        folderCell.className = "folder-name truncated";
+                        folderCell.colSpan = 1;
+                        folderCell.textContent = subdirectory.Name;
+                        folderCell.setAttribute('data-fullpath', subdirectory.FullPath);
+                        folderCell.onclick = () => expandChildElements(folderRow);
+                        folderRow.appendChild(folderCell);
+
+                        tableBody.appendChild(folderRow);
+
+                        if (parentClass === '') {
+                            processDirectory(subdirectory, 'folder-' + subdirectory.Name, depth+1);
+                        } else {
+                            processDirectory(subdirectory, 'folder-' + directory.Name, depth+1);
+                        }
+                    });
+                }
+
+                if (directory.Files && Array.isArray(directory.Files)) {
+                    directory.Files.forEach(file => {
+                        const row = document.createElement('tr');
+                        row.className = 'file-row ' + parentClass.replace(/[^a-zA-Z0-9_-]/g, '_');
+                        row.style.display = parentClass ? 'none' : '';
+
+                        const fillerCell = document.createElement('div');
+                        row.appendChild(fillerCell);
+
+                        const fileCell = document.createElement('td');
+                        fileCell.className = "truncated";
+                        fileCell.textContent = file.Name;
+                        fileCell.setAttribute('data-fullpath', file.FullPath);
+                        row.appendChild(fileCell);
+
+                        const extCell = document.createElement('td');
+                        extCell.setAttribute('class', "ext-cell");
+                        extCell.textContent = getFileExtension(file.Name);
+                        row.appendChild(extCell);
+
+                        const editCell = document.createElement('td');
+                        const checkbox = document.createElement('input');
+                        editCell.setAttribute('class', "edit-cell");
+                        checkbox.setAttribute('data-name', file.Name);
+                        checkbox.type = 'checkbox';
+                        checkbox.value = file.FullPath;
+
+                        checkbox.onchange = () => {
+                            if (checkbox.checked) {
+                                onChecked(checkbox);
+                            } else {
+                                onUnchecked(checkbox);
+                            }
+                        }
+                        editCell.appendChild(checkbox);
+                        row.appendChild(editCell);
+
+                        tableBody.appendChild(row);
+                    });
+                }
+            }
+
+            function onChecked (element) {
+                const selectedList = document.getElementById('selected-files');
+                const checkedFile = document.createElement('div');
+                checkedFile.setAttribute('id', element.value.replace(/[^a-zA-Z0-9_-]/g, '_'));
+                checkedFile.setAttribute('class', 'checked-item');
+
+                checkedFile.textContent = element.getAttribute('data-name');
+                selectedList.appendChild(checkedFile);
+            }
+
+            function onUnchecked (element) {
+                const selectedList = document.getElementById('selected-files');
+                const uncheckedFile = document.getElementById(element.value.replace(/[^a-zA-Z0-9_-]/g, '_'));
+                selectedList.removeChild(uncheckedFile);
+            }
+
+            document.getElementById('scanMedia')
+                .addEventListener('click', () => { 
+                    Dashboard.showLoadingMsg();
+                    const table = document.getElementById('media-available');
+                    const rows = table.querySelectorAll('tbody tr');
+                    rows.forEach(row => row.remove());
+
+                    $.ajax({
+                        type: 'POST',
+                        url: '/plugins/jellyfork/getmedia',
+                        data: {
+                            inputDirectory: document.querySelector('#inputDirectory').value
+                        },
+                        success: function (response) {
+                            cleanup();
+                            rootDir = JSON.parse(response.data);
+                            Dashboard.hideLoadingMsg();
+                            processDirectory(rootDir);
                         },
                         error: function (response) {
                             Dashboard.hideLoadingMsg();
                             console.log(response);
                         }
                     });
-                }
+                });
 
-                function cleanup() {
-                    document.getElementById('selected-files').innerHTML = '';
-                    document.getElementById('newNameInput').value = '';
-                }
-            </script>
+            document.getElementById('move-files')
+                .addEventListener('click', () => { 
+                    Dashboard.showLoadingMsg();
+                    var newNameStr = document.querySelector('#newNameInput').value;
+                    const table = document.getElementById('media-available');
+                    const selectedFiles = [];
+                    const rows = table.querySelectorAll('tbody tr');
 
-            <style>
+                    rows.forEach(row => {
+                        const checkbox = row.querySelector('input[type="checkbox"]');
+                        if (checkbox && checkbox.checked) {
+                            const filenameCell = row.querySelector('td:nth-child(2)');
+                            if (filenameCell) {
+                                selectedFiles.push(filenameCell.getAttribute("data-fullpath").trim());
+                            }
+                        }
+                    });
+                    var nest = document.getElementById('nest-files').checked;
+
+                    let respBox = document.querySelector('#action-response')
+                    fadeReset(respBox);
+
+                    $.ajax({
+                        type: 'POST',
+                        url: '/plugins/jellyfork/manipulate',
+                        data: {
+                            inputDirectory: document.querySelector('#inputDirectory').value,
+                            outputDirectory: document.querySelector('#outputDirectory').value,
+                            newName: document.querySelector('#newNameInput').value,
+                            files: selectedFiles,
+                            nest: nest,
+                            copy: false
+                        },
+                        success: function (response) {
+                            respBox.innerText = response;
+                            respBox.style.color = "#06fb06";
+                            fadeOut(respBox);
+                            Dashboard.hideLoadingMsg();
+                            document.getElementById('scanMedia').click();
+                        },
+                        error: function (response) {
+                            let respBox = document.querySelector('#directory-response')
+                            respBox.innerText = response.responseJSON;
+                            respBox.style.color = "#ff0000";
+                            fadeOut(respBox);
+                            Dashboard.hideLoadingMsg();
+                        }
+                    });
+                });
+
+            document.getElementById('copy-files')
+                .addEventListener('click', () => { 
+                    Dashboard.showLoadingMsg();
+                    var newNameStr = document.querySelector('#newNameInput').value;
+                    const table = document.getElementById('media-available');
+                    const selectedFiles = [];
+                    const rows = table.querySelectorAll('tbody tr');
+
+                    rows.forEach(row => {
+                        const checkbox = row.querySelector('input[type="checkbox"]');
+                        if (checkbox && checkbox.checked) {
+                            const filenameCell = row.querySelector('td:nth-child(2)');
+                            if (filenameCell) {
+                                selectedFiles.push(filenameCell.getAttribute("data-fullpath").trim());
+                            }
+                        }
+                    });
+                    var nest = document.getElementById('nest-files').checked;
+
+                    let respBox = document.querySelector('#action-response')
+                    fadeReset(respBox);
+
+                    $.ajax({
+                        type: 'POST',
+                        url: '/plugins/jellyfork/manipulate',
+                        data: {
+                            inputDirectory: document.querySelector('#inputDirectory').value,
+                            outputDirectory: document.querySelector('#outputDirectory').value,
+                            newName: document.querySelector('#newNameInput').value,
+                            files: selectedFiles,
+                            nest: nest,
+                            copy: true
+                        },
+                        success: function (response) {
+                            respBox.innerText = response;
+                            respBox.style.color = "#06fb06";
+                            fadeOut(respBox);
+                            Dashboard.hideLoadingMsg();
+                            document.getElementById('scanMedia').click();
+                        },
+                        error: function (response) {
+                            let respBox = document.querySelector('#directory-response')
+                            respBox.innerText = response.responseJSON;
+                            respBox.style.color = "#ff0000";
+                            fadeOut(respBox);
+                            Dashboard.hideLoadingMsg();
+                        }
+                    });
+                });
+
+            function expandChildElements(folderRow) {
+                const tableBody = document.querySelector('#media-available tbody');
+                const folderName = folderRow.getAttribute('data-folder').replace(/[^a-zA-Z0-9_-]/g, '_');
+                const childRows = tableBody.querySelectorAll(
+                    '.file-row.folder-' + folderName, '.folder-row.folder-' + folderName
+                );
+                folderRow.classList.toggle('expanded');
+                const isVisible = folderRow.classList.contains('expanded');
+                childRows.forEach(row => {
+                    row.style.display = isVisible ? '' : 'none';
+                });
+            }
+
+
+            function deleteDirectory(path) {
+                Dashboard.showLoadingMsg();
+                $.ajax({
+                    type: 'POST',
+                    url: '/plugins/jellyfork/deleteDirectory',
+                    data: {
+                        path: path
+                    },
+                    success: function (response) {
+                        Dashboard.hideLoadingMsg();
+                        document.getElementById('scanMedia').click();
+                    },
+                    error: function (response) {
+                        Dashboard.hideLoadingMsg();
+                        console.log(response);
+                    }
+                });
+            }
+
+            function cleanup() {
+                document.getElementById('selected-files').innerHTML = '';
+                document.getElementById('newNameInput').value = '';
+            }
+        </script>
+
+        <style>
 .fileExtension {
     text-align: center;
 }
@@ -462,8 +515,7 @@
                 width: 40%;
                 margin: auto;
             }
-            </style>
-
+        </style>
         </div>
     </body>
 </html>

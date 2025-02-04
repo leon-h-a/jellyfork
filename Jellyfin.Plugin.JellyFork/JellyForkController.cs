@@ -19,24 +19,36 @@ namespace Jellyfin.JellyForkPlugin.JellyFork
             _logger = logger;
         }
 
-        [HttpPost("getmedia")]
-        public IActionResult GetMedia([FromForm] string inputDirectory)
+        [HttpPost("setdirectories")]
+        public IActionResult SetDirectries(
+                [FromForm] string inputDirectory,
+                [FromForm] string outputDirectory
+            )
         {
-            if (Directory.Exists(inputDirectory))
+            if (!Directory.Exists(inputDirectory))
             {
-                var directoryTree = GetDirectoryTree(inputDirectory);
-                string json = JsonSerializer.Serialize(directoryTree, new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-
-                return Ok(new { alert = "Configuration saved successfully!", data = json });
+                return BadRequest("Downloads directory does not exist");
+            }
+            else if (!Directory.Exists(outputDirectory))
+            {
+                return BadRequest("Media directory does not exist");
             }
             else
             {
-                _logger.LogInformation("Downloads dir fail");
-                return BadRequest(new { alert = "Downloads directory does not exist" });
+                return Ok("Success!");
             }
+        }
+
+        [HttpPost("getmedia")]
+        public IActionResult GetMedia([FromForm] string inputDirectory)
+        {
+            var directoryTree = GetDirectoryTree(inputDirectory);
+            string json = JsonSerializer.Serialize(directoryTree, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+
+            return Ok(new { data = json });
         }
 
         private static DirectoryNode GetDirectoryTree(string path)
@@ -130,12 +142,17 @@ namespace Jellyfin.JellyForkPlugin.JellyFork
                         System.IO.File.Move(oldFilePath, newFilePath);
                     }
                 }
-                return Ok(new { alert = "Action success"});
+                if (copy) {
+                    return Ok("Copy successful!");
+                }
+                else {
+                    return Ok("Move successful!");
+                }
             }
             catch (Exception ex)
             { 
                 _logger.LogError($"{ex.Message}");
-                return BadRequest(new { alert = $"{ex.Message}"});
+                return BadRequest($"{ex.Message}");
             }
         }
 
@@ -146,14 +163,14 @@ namespace Jellyfin.JellyForkPlugin.JellyFork
             {
                 System.IO.Directory.Delete(path, true);
                 return Ok(new {
-                        alert = "Successfully deleted directory",
+                        msg = "Directory successfully deleted",
                         data = path 
                     }
                 );
             }
             else
             {
-                return BadRequest(new { alert = "Unable to delete directory" });
+                return BadRequest("Unable to delete directory");
             }
         }
     }

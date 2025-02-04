@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("JellyFork")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("2.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("2.0.0.0+0af689db687989725739c2fa52849ce20caf6777")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("2.0.0.0+9aa9c895c0e4cee6e2e412d66bb78242e826eec2")]
 [assembly: System.Reflection.AssemblyProductAttribute("JellyFork")]
 [assembly: System.Reflection.AssemblyTitleAttribute("JellyFork")]
 [assembly: System.Reflection.AssemblyVersionAttribute("2.0.0.0")]
